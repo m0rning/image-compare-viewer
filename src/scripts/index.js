@@ -42,6 +42,68 @@ class ImageCompare {
       circle: [5, 3],
       standard: [8, 0],
     };
+
+    this._mousedown = (ev) => {
+        this._activate(true);
+        document.body.classList.add("icv__body");
+        disableBodyScroll(this.el);
+        this._slideCompare(ev);
+    };
+    this._mousemove = (ev) => this.active && this._slideCompare(ev);
+    this._mouseup = () => this._activate(false);
+    this._touchstart = (e) => {
+        this._activate(true);
+        document.body.classList.add("icv__body");
+        disableBodyScroll(this.el);
+    };
+    this._touchmove = (ev) => {
+        this.active && this._slideCompare(ev);
+    };
+    this._touchend = () => {
+        this._activate(false);
+        document.body.classList.remove("icv__body");
+        enableBodyScroll(this.el);
+    };
+    this._mouseenter = () => {
+        this.settings.hoverStart && this._activate(true);
+        let coord = this.settings.addCircle
+            ? this.arrowCoordinates.circle
+            : this.arrowCoordinates.standard;
+
+        this.arrowAnimator.forEach((anim, i) => {
+            anim.style.cssText = `
+        ${
+                this.settings.verticalMode
+                    ? `transform: translateY(${coord[1] * (i === 0 ? 1 : -1)}px);`
+                    : `transform: translateX(${coord[1] * (i === 0 ? 1 : -1)}px);`
+                }
+        `;
+        });
+    };
+    this._mouseleave = () => {
+        let coord = this.settings.addCircle
+            ? this.arrowCoordinates.circle
+            : this.arrowCoordinates.standard;
+
+        this.arrowAnimator.forEach((anim, i) => {
+            anim.style.cssText = `
+        ${
+                this.settings.verticalMode
+                    ? `transform: translateY(${
+                        i === 0 ? `${coord[0]}px` : `-${coord[0]}px`
+                        });`
+                    : `transform: translateX(${
+                        i === 0 ? `${coord[0]}px` : `-${coord[0]}px`
+                        });`
+                }
+        `;
+        });
+    };
+    this._disableScroll = () => {
+        document.body.classList.remove("icv__body");
+        enableBodyScroll(this.el);
+        this._activate(false);
+    };
   }
 
   mount() {
@@ -56,85 +118,52 @@ class ImageCompare {
     this._events();
   }
 
+  unmount() {
+      // Desktop events
+      this.el.removeEventListener("mousedown", this._mousedown);
+      this.el.removeEventListener("mousemove", this._mousemove);
+
+      this.el.removeEventListener("mouseup", this._mouseup);
+      document.body.removeEventListener("mouseup", this._disableScroll);
+
+      // Mobile events
+
+      this.control.removeEventListener("touchstart", this._touchstart);
+
+      this.el.removeEventListener("touchmove", this._touchmove);
+      this.el.removeEventListener("touchend", this._touchend);
+
+      // hover
+
+      this.el.removeEventListener("mouseenter", this._mouseenter);
+
+      this.el.removeEventListener("mouseleave", this._mouseleave);
+  }
+
   _events() {
     let bodyStyles = `
 
     `;
 
     // Desktop events
-    this.el.addEventListener("mousedown", (ev) => {
-      this._activate(true);
-      document.body.classList.add("icv__body");
-      disableBodyScroll(this.el);
-      this._slideCompare(ev);
-    });
-    this.el.addEventListener(
-      "mousemove",
-      (ev) => this.active && this._slideCompare(ev)
-    );
+    this.el.addEventListener("mousedown", this._mousedown);
+    this.el.addEventListener("mousemove", this._mousemove);
 
-    this.el.addEventListener("mouseup", () => this._activate(false));
-    document.body.addEventListener("mouseup", () => {
-      document.body.classList.remove("icv__body");
-      enableBodyScroll(this.el);
-      this._activate(false);
-    });
+    this.el.addEventListener("mouseup", this._mouseup);
+    document.body.addEventListener("mouseup", this._disableScroll);
 
     // Mobile events
 
-    this.control.addEventListener("touchstart", (e) => {
-      this._activate(true);
-      document.body.classList.add("icv__body");
-      disableBodyScroll(this.el);
-    });
+    this.control.addEventListener("touchstart", this._touchstart);
 
-    this.el.addEventListener("touchmove", (ev) => {
-      this.active && this._slideCompare(ev);
-    });
-    this.el.addEventListener("touchend", () => {
-      this._activate(false);
-      document.body.classList.remove("icv__body");
-      enableBodyScroll(this.el);
-    });
+    this.el.addEventListener("touchmove", this._touchmove);
+    this.el.addEventListener("touchend", this._touchend);
 
     // hover
 
-    this.el.addEventListener("mouseenter", () => {
-      this.settings.hoverStart && this._activate(true);
-      let coord = this.settings.addCircle
-        ? this.arrowCoordinates.circle
-        : this.arrowCoordinates.standard;
+    this.el.addEventListener("mouseenter", this._mouseenter);
 
-      this.arrowAnimator.forEach((anim, i) => {
-        anim.style.cssText = `
-        ${
-          this.settings.verticalMode
-            ? `transform: translateY(${coord[1] * (i === 0 ? 1 : -1)}px);`
-            : `transform: translateX(${coord[1] * (i === 0 ? 1 : -1)}px);`
-        }
-        `;
-      });
-    });
-
-    this.el.addEventListener("mouseleave", () => {
-      let coord = this.settings.addCircle
-        ? this.arrowCoordinates.circle
-        : this.arrowCoordinates.standard;
-
-      this.arrowAnimator.forEach((anim, i) => {
-        anim.style.cssText = `
-        ${
-          this.settings.verticalMode
-            ? `transform: translateY(${
-                i === 0 ? `${coord[0]}px` : `-${coord[0]}px`
-              });`
-            : `transform: translateX(${
-                i === 0 ? `${coord[0]}px` : `-${coord[0]}px`
-              });`
-        }
-        `;
-      });
-    });
+    this.el.addEventListener("mouseleave", this._mouseleave);
   }
 
   _slideCompare(ev) {
