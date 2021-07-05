@@ -138,6 +138,7 @@ class ImageCompare {
       this.el.removeEventListener("mouseenter", this._mouseenter);
 
       this.el.removeEventListener("mouseleave", this._mouseleave);
+      this.el.innerHTML = "";
   }
 
   _events() {
